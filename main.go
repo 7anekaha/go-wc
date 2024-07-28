@@ -33,21 +33,29 @@ func main() {
 	}
 
 	counter := Counter{}
+	var reader *bufio.Reader
 
 	args := flag.Args()
+
+	// If no file is provided, read from stdin
 	if len(args) == 0 {
-		panic("No file provided")
+		reader = bufio.NewReader(os.Stdin)
+	} else {
+		file, err := os.Open(args[0])
+		if err != nil {
+			panic("Unable to open file (" + args[0] + "). Error: " + err.Error())
+		}
+		defer file.Close()
+
+		reader = bufio.NewReader(file)
 	}
-	filepath := args[0]
 
-	file, err := os.Open(filepath)
-	if err != nil {
-		panic("Unable to open file (" + filepath + "). Error: " + err.Error())
-	}
-	defer file.Close()
+	count(reader, &counter)
+	printOutput(&counter, c, w, l, m, args)
 
-	reader := bufio.NewReader(file)
+}
 
+func count(reader *bufio.Reader, counter *Counter) {
 	inWord := false
 	for {
 		r, size, err := reader.ReadRune()
@@ -79,6 +87,9 @@ func main() {
 	if inWord {
 		counter.words++
 	}
+}
+
+func printOutput(counter *Counter, c, w, l, m bool, args []string) {
 
 	stringOutput := ""
 	if l {
@@ -94,7 +105,8 @@ func main() {
 	if m {
 		stringOutput += fmt.Sprintf("   %d", counter.chars)
 	}
-	stringOutput += fmt.Sprintf(" %s", filepath)
+	if len(args) > 0 {
+		stringOutput += fmt.Sprintf(" %s", args[0])
+	}
 	fmt.Printf("%s\n", stringOutput)
-
 }
