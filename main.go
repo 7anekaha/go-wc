@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"unicode"
-	"unicode/utf8"
 )
 
 type Counter struct {
@@ -46,43 +46,38 @@ func main() {
 	}
 	defer file.Close()
 
-	buf := make([]byte, 1024)
+	reader := bufio.NewReader(file)
 
+	inWord := false
 	for {
-		bytesRead, err := file.Read(buf)
-
+		r, size, err := reader.ReadRune()
 		if err == io.EOF {
 			break
 		}
+
 		if err != nil {
 			fmt.Println("Error reading file")
 		}
 
-		counter.bytes += bytesRead
-		inWord := false
-		for i := 0; i < bytesRead; {
-			r, size := utf8.DecodeRune(buf[i:])
-			if r == utf8.RuneError && size == 1 {
-				counter.chars++
-				i++
-				continue
-			}
+		counter.bytes += size
+		counter.chars++
 
-			if !unicode.IsSpace(r) {
-				inWord = true
-			} else {
-				if r == '\n' {
-					counter.lines++
-				}
-				if inWord {
-					counter.words++
-				}
-				inWord = false
-			}
-			counter.chars++
-			i += size
+		if r == '\n' {
+			counter.lines++
 		}
 
+		if unicode.IsSpace(r) {
+			if inWord {
+				counter.words++
+				inWord = false
+			}
+		} else {
+			inWord = true
+		}
+
+	}
+	if inWord {
+		counter.words++
 	}
 
 	stringOutput := ""
